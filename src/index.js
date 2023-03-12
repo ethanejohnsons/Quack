@@ -2,6 +2,8 @@ const {REST} = require("@discordjs/rest");
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { Routes } = require("discord-api-types/v9");
 
+const {MongoClient} = require('mongodb');
+
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -31,15 +33,10 @@ for (const file of commandFiles) {
 
 // Register commands
 client.on("ready", () => {
-    const guild_ids = client.guilds.cache.map(guild => guild.id);
     const rest = new REST({version: "9"}).setToken(token);
-    for(const guildId of guild_ids) {
-        rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-            body: commands
-        })
-        .then(() => console.log(`Added commands to ${guildId}`))
-        .catch(console.error)
-    }
+    rest.put(Routes.applicationCommands(clientId), {
+        body: commands
+    }).catch(console.error)
 });
 
 // Handle command execution
@@ -58,3 +55,7 @@ client.on("interactionCreate", async interaction => {
 });
 
 client.login(token);
+
+const uri = "mongodb://192.168.122.66/quack?retryWrites=true&w=majority";
+client.db = new MongoClient(uri)
+client.db.connect();
