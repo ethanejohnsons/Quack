@@ -1,5 +1,7 @@
 package dev.bluevista.quack
 
+import dev.bluevista.quack.commands.registerMapsCommand
+import dev.bluevista.quack.commands.registerModsCommand
 import dev.kord.core.Kord
 import io.github.cdimascio.dotenv.dotenv
 import org.litote.kmongo.KMongo
@@ -7,7 +9,7 @@ import org.litote.kmongo.KMongo
 suspend fun main() {
     val kord = Kord(token = dotenv()["TOKEN"])
     val database = KMongo.createClient("mongodb://bluevista.dev:27017").getDatabase("quack")
-
-    registerCommands(kord, database)
+    registerMapsCommand(kord, database)
+    registerModsCommand(kord, database)
     kord.login()
 }
