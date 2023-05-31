@@ -161,16 +161,20 @@ private suspend fun handle(database: MongoDatabase, interaction: GuildChatInputC
 
 private fun goToPage(index: Int) : InteractionResponseModifyBuilder.() -> Unit {
     val embed = EmbedBuilder()
-    embed.title = "Quack - Maps (${index / groupSize}/${maps.size / groupSize})"
+    val page = index / groupSize + 1
+    val totalPages = maps.size / groupSize
+    embed.title = "Quack - Maps ($page/$totalPages)"
     embed.description = maps.slice(index..min(index + groupSize, maps.size - 1)).joinToString("\n") { it.name }
     embed.color = Color(255, 255, 0)
 
     val actionRow = ActionRowBuilder()
     actionRow.interactionButton(ButtonStyle.Secondary, "previous-button") {
         label = "⬅"
+        disabled = page <= 1
     }
     actionRow.interactionButton(ButtonStyle.Secondary, "next-button") {
         label = "➡"
+        disabled = page >= totalPages
     }
 
     return {
