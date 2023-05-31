@@ -1,3 +1,3 @@
 # Quack
 
-Manage Quake III on Discord.
+A discord bot for managing Quake III sessions.
