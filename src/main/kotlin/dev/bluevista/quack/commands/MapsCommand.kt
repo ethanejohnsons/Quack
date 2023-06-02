@@ -1,6 +1,6 @@
 package dev.bluevista.quack.commands
 
-import com.mongodb.client.MongoDatabase
+import dev.bluevista.quack.getMaps
 import dev.bluevista.quack.model.*
 import dev.kord.common.Color
 import dev.kord.common.entity.ButtonStyle
@@ -15,7 +15,6 @@ import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.modify.InteractionResponseModifyBuilder
-import dev.kord.rest.builder.message.modify.MessageModifyBuilder
 import org.litote.kmongo.and
 import org.litote.kmongo.div
 import org.litote.kmongo.eq
@@ -26,7 +25,7 @@ var maps = mutableListOf<Q3Map>()
 var index = 0
 const val groupSize = 20
 
-suspend fun registerMapsCommand(kord: Kord, database: MongoDatabase) {
+suspend fun registerMapsCommand(kord: Kord) {
     kord.createGlobalChatInputCommand("maps", "Provides a list of available Quake III maps.") {
         // Guns
         boolean("shotgun", "Whether the map has a Shotgun spawn.") { required = false }
@@ -62,20 +61,20 @@ suspend fun registerMapsCommand(kord: Kord, database: MongoDatabase) {
 
     kord.on<GuildChatInputCommandInteractionCreateEvent> {
         if (interaction.command.rootName == "maps") {
-            handle(database, interaction)
+            handle(interaction)
         }
     }
 
     kord.on<ButtonInteractionCreateEvent> {
         when (interaction.component.customId) {
             "previous-button" -> {
-                val response = interaction.deferPublicMessageUpdate()
+                val response = interaction.deferEphemeralMessageUpdate()
                 index -= groupSize
                 if (index < 0) index = 0
                 response.edit(goToPage(index))
             }
             "next-button" -> {
-                val response = interaction.deferPublicMessageUpdate()
+                val response = interaction.deferEphemeralMessageUpdate()
                 index += groupSize
                 if (index > maps.size - 1) index = maps.size - 1
                 response.edit(goToPage(index))
@@ -84,9 +83,11 @@ suspend fun registerMapsCommand(kord: Kord, database: MongoDatabase) {
     }
 }
 
-private suspend fun handle(database: MongoDatabase, interaction: GuildChatInputCommandInteraction) {
-    val response = interaction.deferPublicResponse()
-    val collection = database.getCollection<Q3Map>("q3maps")
+private suspend fun handle(interaction: GuildChatInputCommandInteraction) {
+    // Defer the response for later
+    val response = interaction.deferEphemeralResponse()
+
+    // Gather boolean filters
     val booleans = interaction.command.booleans
 
     // Guns
@@ -120,8 +121,9 @@ private suspend fun handle(database: MongoDatabase, interaction: GuildChatInputC
     val flight = booleans["flight"]
     val personalteleporter = booleans["personalteleporter"]
 
+    // Get all maps matching filters
     maps.clear()
-    maps.addAll(collection.find(
+    maps.addAll(getMaps(
         and(
             // Guns
             if (shotgun != null) Q3Map::guns / Q3Guns::shotgun eq shotgun else null,
@@ -169,11 +171,11 @@ private fun goToPage(index: Int) : InteractionResponseModifyBuilder.() -> Unit {
 
     val actionRow = ActionRowBuilder()
     actionRow.interactionButton(ButtonStyle.Secondary, "previous-button") {
-        label = "⬅"
+        label = "⬅\uFE0F"
         disabled = page <= 1
     }
     actionRow.interactionButton(ButtonStyle.Secondary, "next-button") {
-        label = "➡"
+        label = "➡\uFE0F"
         disabled = page >= totalPages
     }
 
